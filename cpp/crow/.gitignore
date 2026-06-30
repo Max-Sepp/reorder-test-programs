@@ -1,0 +1,4 @@
+build/
+build-debug/
+build-release/
+vcpkg_installed/

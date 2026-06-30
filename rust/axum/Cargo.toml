@@ -1,0 +1,24 @@
+[package]
+name = "axum-server"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "axum_server"
+path = "src/main.rs"
+
+[dependencies]
+axum = "0.7"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
+
+# Compile-time endpoint selection. Each feature gates one route's handler; with
+# the feature off, that handler is not compiled into the binary at all -- the
+# Cargo analogue of the C++ servers' ENDPOINT_* CMake options. All on by default;
+# exclude one with, e.g.:
+#   cargo build --no-default-features --features echo,log,smallfile
+[features]
+default = ["echo", "log", "smallfile", "bigfile"]
+echo = []
+log = []
+smallfile = []
+bigfile = []

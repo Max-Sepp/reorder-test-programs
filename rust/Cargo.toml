@@ -1,0 +1,13 @@
+# Cargo workspace covering every Rust implementation of the shared test-program
+# interface. A single target/ directory is shared across members so a workspace
+# build only compiles each dependency once.
+#
+# Build everything:           cargo build            (in this directory)
+# Build one implementation:   cargo build -p axum-server
+#
+# Each member exposes one Cargo feature per endpoint (all on by default); see the
+# per-crate Cargo.toml and the top-level README for compile-time endpoint
+# selection.
+[workspace]
+resolver = "2"
+members = ["axum", "actix-web", "rocket"]

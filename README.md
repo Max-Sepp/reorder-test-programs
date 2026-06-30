@@ -12,9 +12,9 @@ different frameworks and languages.
 ## Interface
 
 Every server implements the same HTTP interface. Each one listens on a
-distinct default port so several can run at once (Crow `8080`, cpp-httplib
-`8081`, Drogon `8082`); override per server with the `PORT` environment
-variable.
+distinct default port so several can run at once — C++: Crow `8080`,
+cpp-httplib `8081`, Drogon `8082`; Rust: Axum `8083`, Actix Web `8084`,
+Rocket `8085`. Override per server with the `PORT` environment variable.
 
 | Method & route   | Description                                            |
 |------------------|--------------------------------------------------------|
@@ -56,6 +56,23 @@ make crow-release EXTRA_CMAKE_ARGS="-DENDPOINT_ECHO=OFF -DENDPOINT_BIGFILE=OFF"
 The options are shared, so a single `-DENDPOINT_<NAME>=OFF` applies to every
 implementation when building the aggregate `cpp/` project.
 
+The Rust servers do the same thing with **Cargo features** — one per endpoint
+(`echo`, `log`, `smallfile`, `bigfile`), all on by default. Excluding one omits
+its handler from the binary entirely:
+
+```sh
+cargo build -p axum-server --no-default-features --features echo,smallfile
+```
+
+Or via the Makefile, which forwards `EXTRA_CARGO_ARGS` to Cargo:
+
+```sh
+make axum-release EXTRA_CARGO_ARGS="--no-default-features --features echo,smallfile"
+```
+
+Cargo features are per-crate, so a selection applies to whichever package you
+build (see [`rust/README.md`](rust/README.md)).
+
 ## Layout
 
 ```
@@ -64,10 +81,14 @@ implementation when building the aggregate `cpp/` project.
 │   ├── smallfile          1 KiB file for GET /smallfile
 │   ├── bigfile            1 MiB file for GET /bigfile
 │   └── server.log         Log file (created at runtime, git-ignored)
-└── cpp/                 C++ implementations
-    ├── crow/              Crow framework — implemented
-    ├── cpp-httplib/       cpp-httplib — implemented
-    └── drogon/            Drogon framework — implemented
+├── cpp/                 C++ implementations
+│   ├── crow/              Crow framework — implemented
+│   ├── cpp-httplib/       cpp-httplib — implemented
+│   └── drogon/            Drogon framework — implemented
+└── rust/                Rust implementations (Cargo workspace)
+    ├── axum/              Axum framework — implemented
+    ├── actix-web/         Actix Web framework — implemented
+    └── rocket/            Rocket framework — implemented
 ```
 
 Each implementation reads from and writes to the shared `assets/` directory, so
@@ -75,16 +96,21 @@ all servers serve identical payloads and share the same log file location.
 
 ## Implementations
 
-| Implementation | Language | Build system    | Status      |
-|----------------|----------|-----------------|-------------|
-| `cpp/crow`     | C++23    | CMake + vcpkg   | ✅ Done     |
-| `cpp/cpp-httplib` | C++23 | CMake + vcpkg   | ✅ Done     |
-| `cpp/drogon`   | C++23    | CMake + vcpkg   | ✅ Done     |
+| Implementation    | Language | Build system    | Status      |
+|-------------------|----------|-----------------|-------------|
+| `cpp/crow`        | C++23    | CMake + vcpkg   | ✅ Done     |
+| `cpp/cpp-httplib` | C++23    | CMake + vcpkg   | ✅ Done     |
+| `cpp/drogon`      | C++23    | CMake + vcpkg   | ✅ Done     |
+| `rust/axum`       | Rust     | Cargo           | ✅ Done     |
+| `rust/actix-web`  | Rust     | Cargo           | ✅ Done     |
+| `rust/rocket`     | Rust     | Cargo           | ✅ Done     |
 
 See each implementation's own `README.md` for build and run instructions
-(e.g. [`cpp/crow/README.md`](cpp/crow/README.md)).
+(e.g. [`cpp/crow/README.md`](cpp/crow/README.md),
+[`rust/axum/README.md`](rust/axum/README.md)).
 
-All implementations target **C++23** and build with clang.
+The C++ servers target **C++23** and build with clang; the Rust servers are a
+single Cargo workspace under [`rust/`](rust/README.md).
 
 ## Editor setup (IntelliSense)
 
@@ -126,6 +152,27 @@ curl -d 'a line' localhost:8080/log      # append to the log
 curl localhost:8080/log                  # read it back
 curl -O localhost:8080/smallfile         # 1 KiB
 curl -O localhost:8080/bigfile           # 1 MiB
+```
+
+## Quick start (Axum)
+
+Requires a [Rust toolchain](https://rustup.rs/) (the Rust servers are a Cargo
+workspace under `rust/`).
+
+```sh
+cd rust
+cargo build -p axum-server
+./target/debug/axum_server
+```
+
+Then, from another shell:
+
+```sh
+curl -d 'hello' localhost:8083/echo      # -> hello
+curl -d 'a line' localhost:8083/log      # append to the log
+curl localhost:8083/log                  # read it back
+curl -O localhost:8083/smallfile         # 1 KiB
+curl -O localhost:8083/bigfile           # 1 MiB
 ```
 
 ## Notes

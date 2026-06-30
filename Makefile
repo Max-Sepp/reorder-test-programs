@@ -15,10 +15,16 @@
 VCPKG_ROOT ?= $(HOME)/.vcpkg/vcpkg
 TOOLCHAIN  := $(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake
 
+# This project builds exclusively with clang. CXX is a Make built-in (defaults
+# to g++), so force it with := rather than ?=; override on the command line with
+# `make CXX=... <target>` if needed.
+CXX := clang++
+CMAKE_FLAGS := -DCMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN)" -DCMAKE_CXX_COMPILER="$(CXX)"
+
 # Projects that have a CMake build (add new implementations here).
 PROJECTS := crow cpp-httplib drogon
 
-.PHONY: all debug release clean help
+.PHONY: all debug release clean help compile-commands
 
 help:
 	@echo "Targets:"
@@ -27,14 +33,22 @@ help:
 	@echo "  make <name>-clean      Remove a project's build directories"
 	@echo "  make debug | release   Build every project in that configuration"
 	@echo "  make clean             Remove every build directory"
+	@echo "  make compile-commands  Configure the global build -> build/compile_commands.json"
 	@echo ""
 	@echo "Projects: $(PROJECTS)"
+
+# Configure the aggregate project (cpp/CMakeLists.txt) to generate a single
+# build/compile_commands.json covering every implementation, for editor
+# IntelliSense / clangd. Configures only; it does not compile anything.
+compile-commands:
+	cmake -S cpp -B build $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Debug
 
 # Aggregate targets across all projects.
 all: release
 debug:   $(addsuffix -debug,$(PROJECTS))
 release: $(addsuffix -release,$(PROJECTS))
 clean:   $(addsuffix -clean,$(PROJECTS))
+	rm -rf build
 
 # Generate <name>-debug / <name>-release / <name>-clean for each project.
 define PROJECT_template
@@ -42,13 +56,13 @@ define PROJECT_template
 
 $(1)-debug:
 	cmake -S cpp/$(1) -B cpp/$(1)/build-debug \
-		-DCMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN)" \
+		$(CMAKE_FLAGS) \
 		-DCMAKE_BUILD_TYPE=Debug
 	cmake --build cpp/$(1)/build-debug
 
 $(1)-release:
 	cmake -S cpp/$(1) -B cpp/$(1)/build-release \
-		-DCMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN)" \
+		$(CMAKE_FLAGS) \
 		-DCMAKE_BUILD_TYPE=Release
 	cmake --build cpp/$(1)/build-release
 

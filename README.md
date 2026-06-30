@@ -11,7 +11,9 @@ different frameworks and languages.
 
 ## Interface
 
-Every server implements the same HTTP interface and listens on **port 8080**.
+Every server implements the same HTTP interface. Each one listens on a
+distinct default port so several can run at once (Crow `8080`, cpp-httplib
+`8081`); override per server with the `PORT` environment variable.
 
 | Method & route   | Description                                            |
 |------------------|--------------------------------------------------------|
@@ -31,7 +33,7 @@ Every server implements the same HTTP interface and listens on **port 8080**.
 │   └── server.log         Log file (created at runtime, git-ignored)
 └── cpp/                 C++ implementations
     ├── crow/              Crow framework — implemented
-    ├── cpp-httplib/       cpp-httplib — planned
+    ├── cpp-httplib/       cpp-httplib — implemented
     └── drogon/            Drogon framework — planned
 ```
 
@@ -42,12 +44,35 @@ all servers serve identical payloads and share the same log file location.
 
 | Implementation | Language | Build system    | Status      |
 |----------------|----------|-----------------|-------------|
-| `cpp/crow`     | C++17    | CMake + vcpkg   | ✅ Done     |
-| `cpp/cpp-httplib` | C++   | CMake + vcpkg   | 🚧 Planned  |
+| `cpp/crow`     | C++23    | CMake + vcpkg   | ✅ Done     |
+| `cpp/cpp-httplib` | C++23 | CMake + vcpkg   | ✅ Done     |
 | `cpp/drogon`   | C++      | CMake + vcpkg   | 🚧 Planned  |
 
 See each implementation's own `README.md` for build and run instructions
 (e.g. [`cpp/crow/README.md`](cpp/crow/README.md)).
+
+All implementations target **C++23** and build with clang.
+
+## Editor setup (IntelliSense)
+
+[`cpp/CMakeLists.txt`](cpp/CMakeLists.txt) is a single aggregate project that
+covers every implementation (each `cpp/<name>` is also still a standalone
+project). Configure it once to generate a single `compile_commands.json`
+covering the whole tree, which editor IntelliSense / clangd can point at:
+
+```sh
+make compile-commands     # -> build/compile_commands.json
+```
+
+For VS Code, point the C/C++ extension at that file (`.vscode/settings.json` is
+git-ignored, so this lives in your local copy):
+
+```json
+{
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "C_Cpp.default.cppStandard": "c++23"
+}
+```
 
 ## Quick start (Crow)
 

@@ -9,9 +9,17 @@ on:
   workflow_dispatch:
 
 jobs:
-  crow:
-    name: Crow (clang, ASan + UBSan)
+  conformance:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Crow (clang, ASan + UBSan)
+            script: scripts/test_crow.sh
+          - name: cpp-httplib (clang, ASan + UBSan)
+            script: scripts/test_httplib.sh
     steps:
       - uses: actions/checkout@v4
 
@@ -26,10 +34,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/vcpkg/archives
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('cpp/crow/vcpkg.json') }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('cpp/**/vcpkg.json') }}
           restore-keys: vcpkg-${{ runner.os }}-
 
       - name: Build with sanitisers and run conformance tests
         run: |
           export VCPKG_ROOT="$VCPKG_INSTALLATION_ROOT"
-          ./scripts/test_crow.sh
+          ${{ matrix.script }}

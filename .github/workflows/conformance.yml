@@ -1,0 +1,35 @@
+name: Conformance
+
+# Build each server with sanitisers and run the shared interface conformance
+# tests against it on Linux.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  crow:
+    name: Crow (clang, ASan + UBSan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake curl
+
+      # GitHub-hosted runners ship a bootstrapped vcpkg at
+      # $VCPKG_INSTALLATION_ROOT; the test script picks it up via VCPKG_ROOT.
+      - name: Cache vcpkg packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('cpp/crow/vcpkg.json') }}
+          restore-keys: vcpkg-${{ runner.os }}-
+
+      - name: Build with sanitisers and run conformance tests
+        run: |
+          export VCPKG_ROOT="$VCPKG_INSTALLATION_ROOT"
+          ./scripts/test_crow.sh

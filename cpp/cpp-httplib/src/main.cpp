@@ -11,14 +11,16 @@ namespace {
 
 // Resolve the assets directory: ASSETS_DIR env var wins, otherwise the
 // compile-time default pointing at the project-root "assets" folder.
-std::string assets_dir() {
+// (Helpers are [[maybe_unused]] because endpoints can be excluded at compile
+// time -- see ENDPOINT_* below -- leaving some of them unreferenced.)
+[[maybe_unused]] std::string assets_dir() {
     if (const char* env = std::getenv("ASSETS_DIR")) {
         return env;
     }
     return DEFAULT_ASSETS_DIR;
 }
 
-std::string log_path() {
+[[maybe_unused]] std::string log_path() {
     return assets_dir() + "/server.httplib.log";
 }
 
@@ -34,10 +36,10 @@ int port() {
 }
 
 // Serializes access to the log file across worker threads.
-std::mutex g_log_mutex;
+[[maybe_unused]] std::mutex g_log_mutex;
 
 // Reads an entire file into a string. Returns false if it can't be opened.
-bool read_file(const std::string& path, std::string& out) {
+[[maybe_unused]] bool read_file(const std::string& path, std::string& out) {
     std::ifstream in(path, std::ios::binary);
     if (!in) {
         return false;
@@ -49,7 +51,8 @@ bool read_file(const std::string& path, std::string& out) {
 }
 
 // Sends a file from the assets directory, or a 404 if it is missing.
-void serve_asset(const std::string& filename, httplib::Response& res) {
+[[maybe_unused]] void serve_asset(const std::string& filename,
+                                  httplib::Response& res) {
     std::string body;
     if (!read_file(assets_dir() + "/" + filename, body)) {
         res.status = 404;
@@ -77,11 +80,14 @@ int main() {
     std::signal(SIGINT, handle_signal);
     std::signal(SIGTERM, handle_signal);
 
+#ifdef ENDPOINT_ECHO
     // POST /echo : echo the request body back to the client.
     app.Post("/echo", [](const httplib::Request& req, httplib::Response& res) {
         res.set_content(req.body, "application/octet-stream");
     });
+#endif
 
+#ifdef ENDPOINT_LOG
     // GET /log : return the full contents of the log file.
     app.Get("/log", [](const httplib::Request&, httplib::Response& res) {
         std::lock_guard<std::mutex> lock(g_log_mutex);
@@ -102,16 +108,21 @@ int main() {
         out << req.body;
         res.status = 204;
     });
+#endif
 
+#ifdef ENDPOINT_SMALLFILE
     // GET /smallfile : the kilobyte file.
     app.Get("/smallfile", [](const httplib::Request&, httplib::Response& res) {
         serve_asset("smallfile", res);
     });
+#endif
 
+#ifdef ENDPOINT_BIGFILE
     // GET /bigfile : the megabyte file.
     app.Get("/bigfile", [](const httplib::Request&, httplib::Response& res) {
         serve_asset("bigfile", res);
     });
+#endif
 
     app.listen("0.0.0.0", port());
     return 0;

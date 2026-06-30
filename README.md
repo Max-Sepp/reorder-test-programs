@@ -24,6 +24,38 @@ variable.
 | `GET /smallfile` | Returns the kilobyte file (`assets/smallfile`, 1 KiB). |
 | `GET /bigfile`   | Returns the megabyte file (`assets/bigfile`, 1 MiB).   |
 
+### Compile-time endpoint selection
+
+Each endpoint can be excluded at **compile time** so its handler is not present
+in the binary at all — useful for measuring the startup cost of individual
+handlers. Every server exposes one CMake option per endpoint, all `ON` by
+default (declared in [`cpp/endpoints.cmake`](cpp/endpoints.cmake)):
+
+| Option               | Endpoint        |
+|----------------------|-----------------|
+| `ENDPOINT_ECHO`      | `POST /echo`    |
+| `ENDPOINT_LOG`       | `GET`/`POST /log` |
+| `ENDPOINT_SMALLFILE` | `GET /smallfile` |
+| `ENDPOINT_BIGFILE`   | `GET /bigfile`  |
+
+Turn one off when configuring, e.g. to build the Crow server with only
+`/smallfile`:
+
+```sh
+cmake -S cpp/crow -B build \
+  -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+  -DENDPOINT_ECHO=OFF -DENDPOINT_LOG=OFF -DENDPOINT_BIGFILE=OFF
+```
+
+Or via the Makefile, which forwards `EXTRA_CMAKE_ARGS` to CMake:
+
+```sh
+make crow-release EXTRA_CMAKE_ARGS="-DENDPOINT_ECHO=OFF -DENDPOINT_BIGFILE=OFF"
+```
+
+The options are shared, so a single `-DENDPOINT_<NAME>=OFF` applies to every
+implementation when building the aggregate `cpp/` project.
+
 ## Layout
 
 ```

@@ -13,7 +13,8 @@ different frameworks and languages.
 
 Every server implements the same HTTP interface. Each one listens on a
 distinct default port so several can run at once (Crow `8080`, cpp-httplib
-`8081`); override per server with the `PORT` environment variable.
+`8081`, Drogon `8082`); override per server with the `PORT` environment
+variable.
 
 | Method & route   | Description                                            |
 |------------------|--------------------------------------------------------|
@@ -34,7 +35,7 @@ distinct default port so several can run at once (Crow `8080`, cpp-httplib
 └── cpp/                 C++ implementations
     ├── crow/              Crow framework — implemented
     ├── cpp-httplib/       cpp-httplib — implemented
-    └── drogon/            Drogon framework — planned
+    └── drogon/            Drogon framework — implemented
 ```
 
 Each implementation reads from and writes to the shared `assets/` directory, so
@@ -46,7 +47,7 @@ all servers serve identical payloads and share the same log file location.
 |----------------|----------|-----------------|-------------|
 | `cpp/crow`     | C++23    | CMake + vcpkg   | ✅ Done     |
 | `cpp/cpp-httplib` | C++23 | CMake + vcpkg   | ✅ Done     |
-| `cpp/drogon`   | C++      | CMake + vcpkg   | 🚧 Planned  |
+| `cpp/drogon`   | C++23    | CMake + vcpkg   | ✅ Done     |
 
 See each implementation's own `README.md` for build and run instructions
 (e.g. [`cpp/crow/README.md`](cpp/crow/README.md)).

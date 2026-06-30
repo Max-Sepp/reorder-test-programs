@@ -20,6 +20,8 @@ jobs:
             script: scripts/test_crow.sh
           - name: cpp-httplib (clang, ASan + UBSan)
             script: scripts/test_httplib.sh
+          - name: Drogon (clang, ASan + UBSan)
+            script: scripts/test_drogon.sh
     steps:
       - uses: actions/checkout@v4
 

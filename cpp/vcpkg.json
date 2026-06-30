@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "dependencies": [
     "crow",
-    "cpp-httplib"
+    "cpp-httplib",
+    "drogon"
   ]
 }

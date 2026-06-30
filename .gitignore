@@ -6,3 +6,6 @@
 
 # clangd background-index cache.
 /.cache/
+
+# Used as a temp directory for testing code
+/tmp/

@@ -10,14 +10,16 @@ namespace {
 
 // Resolve the assets directory: ASSETS_DIR env var wins, otherwise the
 // compile-time default pointing at the project-root "assets" folder.
-std::string assets_dir() {
+// (Helpers are [[maybe_unused]] because endpoints can be excluded at compile
+// time -- see ENDPOINT_* below -- leaving some of them unreferenced.)
+[[maybe_unused]] std::string assets_dir() {
     if (const char* env = std::getenv("ASSETS_DIR")) {
         return env;
     }
     return DEFAULT_ASSETS_DIR;
 }
 
-std::string log_path() {
+[[maybe_unused]] std::string log_path() {
     return assets_dir() + "/server.crow.log";
 }
 
@@ -33,10 +35,10 @@ int port() {
 }
 
 // Serializes access to the log file across worker threads.
-std::mutex g_log_mutex;
+[[maybe_unused]] std::mutex g_log_mutex;
 
 // Reads an entire file into a string. Returns false if it can't be opened.
-bool read_file(const std::string& path, std::string& out) {
+[[maybe_unused]] bool read_file(const std::string& path, std::string& out) {
     std::ifstream in(path, std::ios::binary);
     if (!in) {
         return false;
@@ -48,7 +50,7 @@ bool read_file(const std::string& path, std::string& out) {
 }
 
 // Sends a file from the assets directory, or a 404 if it is missing.
-crow::response serve_asset(const std::string& filename) {
+[[maybe_unused]] crow::response serve_asset(const std::string& filename) {
     std::string body;
     if (!read_file(assets_dir() + "/" + filename, body)) {
         return crow::response(crow::status::NOT_FOUND, "asset not found");
@@ -63,11 +65,14 @@ crow::response serve_asset(const std::string& filename) {
 int main() {
     crow::SimpleApp app;
 
+#ifdef ENDPOINT_ECHO
     // POST /echo : echo the request body back to the client.
     CROW_ROUTE(app, "/echo")
         .methods(crow::HTTPMethod::POST)(
             [](const crow::request& req) { return crow::response(req.body); });
+#endif
 
+#ifdef ENDPOINT_LOG
     // GET /log : return the full contents of the log file.
     // POST /log : append the request body to the log file.
     CROW_ROUTE(app, "/log")
@@ -98,14 +103,19 @@ int main() {
                 out << req.body;
                 return crow::response(crow::status::NO_CONTENT);
             });
+#endif
 
+#ifdef ENDPOINT_SMALLFILE
     // GET /smallfile : the kilobyte file.
     CROW_ROUTE(app, "/smallfile")(
         []() { return serve_asset("smallfile"); });
+#endif
 
+#ifdef ENDPOINT_BIGFILE
     // GET /bigfile : the megabyte file.
     CROW_ROUTE(app, "/bigfile")(
         []() { return serve_asset("bigfile"); });
+#endif
 
     app.port(port()).multithreaded().run();
     return 0;

@@ -19,7 +19,12 @@ TOOLCHAIN  := $(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake
 # to g++), so force it with := rather than ?=; override on the command line with
 # `make CXX=... <target>` if needed.
 CXX := clang++
-CMAKE_FLAGS := -DCMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN)" -DCMAKE_CXX_COMPILER="$(CXX)"
+
+# Extra args forwarded to every CMake configure, e.g. to exclude endpoints at
+# compile time:
+#   make crow-release EXTRA_CMAKE_ARGS="-DENDPOINT_BIGFILE=OFF -DENDPOINT_LOG=OFF"
+EXTRA_CMAKE_ARGS ?=
+CMAKE_FLAGS := -DCMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN)" -DCMAKE_CXX_COMPILER="$(CXX)" $(EXTRA_CMAKE_ARGS)
 
 # Projects that have a CMake build (add new implementations here).
 PROJECTS := crow cpp-httplib drogon
@@ -34,6 +39,9 @@ help:
 	@echo "  make debug | release   Build every project in that configuration"
 	@echo "  make clean             Remove every build directory"
 	@echo "  make compile-commands  Configure the global build -> build/compile_commands.json"
+	@echo ""
+	@echo "Exclude endpoints at compile time via EXTRA_CMAKE_ARGS, e.g.:"
+	@echo "  make crow-release EXTRA_CMAKE_ARGS=\"-DENDPOINT_BIGFILE=OFF\""
 	@echo ""
 	@echo "Projects: $(PROJECTS)"
 

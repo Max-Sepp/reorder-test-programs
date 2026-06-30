@@ -12,14 +12,16 @@ namespace {
 
 // Resolve the assets directory: ASSETS_DIR env var wins, otherwise the
 // compile-time default pointing at the project-root "assets" folder.
-std::string assets_dir() {
+// (Helpers are [[maybe_unused]] because endpoints can be excluded at compile
+// time -- see ENDPOINT_* below -- leaving some of them unreferenced.)
+[[maybe_unused]] std::string assets_dir() {
     if (const char* env = std::getenv("ASSETS_DIR")) {
         return env;
     }
     return DEFAULT_ASSETS_DIR;
 }
 
-std::string log_path() {
+[[maybe_unused]] std::string log_path() {
     return assets_dir() + "/server.drogon.log";
 }
 
@@ -35,10 +37,10 @@ int port() {
 }
 
 // Serializes access to the log file across worker threads.
-std::mutex g_log_mutex;
+[[maybe_unused]] std::mutex g_log_mutex;
 
 // Reads an entire file into a string. Returns false if it can't be opened.
-bool read_file(const std::string& path, std::string& out) {
+[[maybe_unused]] bool read_file(const std::string& path, std::string& out) {
     std::ifstream in(path, std::ios::binary);
     if (!in) {
         return false;
@@ -49,8 +51,8 @@ bool read_file(const std::string& path, std::string& out) {
     return true;
 }
 
-drogon::HttpResponsePtr make_response(std::string body,
-                                      drogon::ContentType type) {
+[[maybe_unused]] drogon::HttpResponsePtr make_response(
+    std::string body, drogon::ContentType type) {
     auto resp = drogon::HttpResponse::newHttpResponse();
     resp->setBody(std::move(body));
     resp->setContentTypeCode(type);
@@ -59,7 +61,8 @@ drogon::HttpResponsePtr make_response(std::string body,
 
 // Builds a response serving a file from the assets directory, or a 404 if it
 // is missing.
-drogon::HttpResponsePtr serve_asset(const std::string& filename) {
+[[maybe_unused]] drogon::HttpResponsePtr serve_asset(
+    const std::string& filename) {
     std::string body;
     if (!read_file(assets_dir() + "/" + filename, body)) {
         auto resp = make_response("asset not found", drogon::CT_TEXT_PLAIN);
@@ -82,6 +85,7 @@ int main() {
     std::signal(SIGINT, handle_signal);
     std::signal(SIGTERM, handle_signal);
 
+#ifdef ENDPOINT_ECHO
     // POST /echo : echo the request body back to the client.
     app().registerHandler(
         "/echo",
@@ -91,7 +95,9 @@ int main() {
                                    CT_APPLICATION_OCTET_STREAM));
         },
         {Post});
+#endif
 
+#ifdef ENDPOINT_LOG
     // GET /log : return the full contents of the log file.
     // POST /log : append the request body to the log file.
     app().registerHandler(
@@ -119,7 +125,9 @@ int main() {
             callback(resp);
         },
         {Get, Post});
+#endif
 
+#ifdef ENDPOINT_SMALLFILE
     // GET /smallfile : the kilobyte file.
     app().registerHandler(
         "/smallfile",
@@ -128,7 +136,9 @@ int main() {
             callback(serve_asset("smallfile"));
         },
         {Get});
+#endif
 
+#ifdef ENDPOINT_BIGFILE
     // GET /bigfile : the megabyte file.
     app().registerHandler(
         "/bigfile",
@@ -137,6 +147,7 @@ int main() {
             callback(serve_asset("bigfile"));
         },
         {Get});
+#endif
 
     app().addListener("0.0.0.0", port()).run();
     return 0;

@@ -22,4 +22,4 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(crow)
 add_subdirectory(cpp-httplib)
-# add_subdirectory(drogon)  # planned
+add_subdirectory(drogon)

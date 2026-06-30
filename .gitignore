@@ -1,1 +1,5 @@
 .vscode/settings.json
+
+# Aggregate global build (cpp/CMakeLists.txt) used for IntelliSense; vcpkg
+# installs its dependencies inside this build directory.
+/build/

@@ -21,6 +21,17 @@ std::string log_path() {
     return assets_dir() + "/server.crow.log";
 }
 
+// Resolve the listen port: PORT env var wins, otherwise this server's default.
+// Each implementation uses a distinct default so several can run at once.
+int port() {
+    if (const char* env = std::getenv("PORT")) {
+        if (int p = std::atoi(env)) {
+            return p;
+        }
+    }
+    return 8080;
+}
+
 // Serializes access to the log file across worker threads.
 std::mutex g_log_mutex;
 
@@ -96,6 +107,6 @@ int main() {
     CROW_ROUTE(app, "/bigfile")(
         []() { return serve_asset("bigfile"); });
 
-    app.port(8080).multithreaded().run();
+    app.port(port()).multithreaded().run();
     return 0;
 }

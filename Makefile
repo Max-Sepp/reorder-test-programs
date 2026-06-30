@@ -29,7 +29,7 @@ CMAKE_FLAGS := -DCMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN)" -DCMAKE_CXX_COMPILER="$(CXX
 # Projects that have a CMake build (add new implementations here).
 PROJECTS := crow cpp-httplib drogon
 
-.PHONY: all debug release clean help compile-commands
+.PHONY: all debug release clean clean-all help compile-commands
 
 help:
 	@echo "Targets:"
@@ -38,6 +38,7 @@ help:
 	@echo "  make <name>-clean      Remove a project's build directories"
 	@echo "  make debug | release   Build every project in that configuration"
 	@echo "  make clean             Remove every build directory"
+	@echo "  make clean-all         Remove every directory matching build* in the tree"
 	@echo "  make compile-commands  Configure the global build -> build/compile_commands.json"
 	@echo ""
 	@echo "Exclude endpoints at compile time via EXTRA_CMAKE_ARGS, e.g.:"
@@ -57,6 +58,11 @@ debug:   $(addsuffix -debug,$(PROJECTS))
 release: $(addsuffix -release,$(PROJECTS))
 clean:   $(addsuffix -clean,$(PROJECTS))
 	rm -rf build
+
+# Remove every directory matching build* anywhere in the tree (e.g. the root
+# build/ and each cpp/<name>/build-debug, build-release).
+clean-all:
+	find . -type d -name 'build*' -prune -exec rm -rf {} +
 
 # Generate <name>-debug / <name>-release / <name>-clean for each project.
 define PROJECT_template

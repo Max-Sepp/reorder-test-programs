@@ -1,7 +1,8 @@
 name: Conformance
 
-# Build each server with sanitisers and run the shared interface conformance
-# tests against it on Linux.
+# Build each server and run the shared interface conformance tests against it on
+# Linux. The C++ servers are built with sanitisers (ASan + UBSan); the Rust
+# servers are built with Cargo (no sanitisers -- they have no unsafe code).
 on:
   push:
     branches: [main]
@@ -43,3 +44,35 @@ jobs:
         run: |
           export VCPKG_ROOT="$VCPKG_INSTALLATION_ROOT"
           ${{ matrix.script }}
+
+  conformance-rust:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Axum (cargo)
+            script: scripts/test_axum.sh
+          - name: Actix Web (cargo)
+            script: scripts/test_actix.sh
+          - name: Rocket (cargo)
+            script: scripts/test_rocket.sh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry and build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rust/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('rust/Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      - name: Build and run conformance tests
+        run: ${{ matrix.script }}

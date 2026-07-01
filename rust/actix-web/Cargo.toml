@@ -1,0 +1,25 @@
+[package]
+# Named actix-web-server (not actix-server) to avoid colliding with the
+# transitive `actix-server` crate that Actix Web pulls in for its runtime.
+name = "actix-web-server"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "actix_server"
+path = "src/main.rs"
+
+[dependencies]
+actix-web = "4"
+
+# Compile-time endpoint selection. Each feature gates one route's handler; with
+# the feature off, that handler is not compiled into the binary at all -- the
+# Cargo analogue of the C++ servers' ENDPOINT_* CMake options. All on by default;
+# exclude one with, e.g.:
+#   cargo build --no-default-features --features echo,log,smallfile
+[features]
+default = ["echo", "log", "smallfile", "bigfile"]
+echo = []
+log = []
+smallfile = []
+bigfile = []

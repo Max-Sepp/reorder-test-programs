@@ -6,10 +6,12 @@
 # measures the time taken for the server to start up and respond to the
 # request.
 #
-# Output file is a CSV of just the memory access output, no other information,
-# i.e. it has been cleaned up to only contain the memory accesses recorded by
-# valgrind. Columns are "type,address,size" where type is I (instruction
-# fetch), L (load), S (store) or M (modify), address is hex and size is bytes.
+# Output is a CSV of just the memory access output, no other information, i.e. it
+# has been cleaned up to only contain the memory accesses recorded by valgrind.
+# Columns are "type,address,size" where type is I (instruction fetch), L (load),
+# S (store) or M (modify), address is hex and size is bytes. The CSV goes to
+# stdout by default (progress goes to stderr, so the stream stays clean and
+# pipeable), or to the given file.
 #
 # The server is run under valgrind's lackey tool (--trace-mem=yes), which
 # records every memory reference from the first instruction, so the trace
@@ -17,8 +19,7 @@
 #
 # Args:
 #   $1: The path to the server binary to run.
-#   $2: Memory access CSV output file (optional; defaults to
-#       <binary>.memtrace.csv).
+#   $2: Memory access CSV output file (optional; defaults to stdout).
 #
 # Env:
 #   PORT: Port the server listens on (default 8080). Set this to avoid
@@ -27,7 +28,7 @@
 # Example:
 #   # Build the Axum server, then trace its startup + first request.
 #   ( cd rust && cargo build -p axum-server )
-#   PORT=8090 scripts/analyse/measure_initial_startup_and_request.sh rust/target/debug/axum_server axum.memtrace.csv
+#   PORT=8090 scripts/analyse/measure_initial_startup_and_request.sh rust/target/debug/axum_server > axum.memtrace.csv
 #
 #   # axum.memtrace.csv now holds only the memory accesses, e.g.:
 #   #   type,address,size
@@ -42,8 +43,8 @@ if [ "$#" -lt 1 ]; then
 fi
 
 BINARY="$1"
-# Where the cleaned-up memory access trace ends up. Defaults next to the binary.
-OUTPUT="${2:-${BINARY}.memtrace.csv}"
+# Where the cleaned-up memory access trace ends up. Defaults to stdout.
+OUTPUT="${2:-}"
 
 if [ ! -x "$BINARY" ]; then
     echo "error: server binary not found or not executable: $BINARY" >&2
@@ -128,11 +129,14 @@ wait "$SERVER_PID" 2>/dev/null || true
 # only the trace lines and reshape each into a CSV row: the access type (I =
 # instruction fetch, L = load, S = store, M = modify), the hex address, and the
 # size in bytes.
-echo "==> Writing cleaned memory access trace to $OUTPUT" >&2
-awk '
-    BEGIN { print "type,address,size" }
-    /^ ?[ILSM] / { split($2, a, ","); printf "%s,%s,%s\n", $1, a[1], a[2] }
-' "$RAW" > "$OUTPUT"
+echo "==> Writing cleaned memory access trace${OUTPUT:+ to $OUTPUT}" >&2
+clean_trace() {
+    awk '
+        BEGIN { print "type,address,size" }
+        /^ ?[ILSM] / { split($2, a, ","); printf "%s,%s,%s\n", $1, a[1], a[2] }
+    ' "$RAW"
+}
+if [ -n "$OUTPUT" ]; then clean_trace > "$OUTPUT"; else clean_trace; fi
 
 rm -f "$RAW"
 echo "==> Done" >&2

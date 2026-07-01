@@ -163,6 +163,46 @@ STRATEGIES = {
 }
 
 
+# --- Default artifact paths (shared with reorder_binary.py) -----------------
+
+
+def default_trace_path(binary: Path) -> Path:
+    return binary.with_name(binary.name + ".memtrace.csv")
+
+
+def default_layout_path(binary: Path) -> Path:
+    return binary.with_name(binary.name + ".layout.json")
+
+
+def default_order_path(binary: Path) -> Path:
+    return binary.with_name(binary.name + ".bolt-order.txt")
+
+
+# --- End-to-end order computation (reusable) --------------------------------
+
+
+def compute_order(
+    binary: Path,
+    trace_path: Path,
+    layout_path: Path,
+    port: int,
+    strategy: str,
+    force: bool,
+) -> list[str]:
+    """Run the full trace -> layout -> order pipeline and return the ordered
+    mangled symbols. Cache-aware: precomputed trace/layout files are reused
+    unless force is set."""
+    ensure_layout(binary, layout_path, force)
+    ensure_trace(binary, trace_path, port, force)
+
+    starts, ends, names = load_layout(layout_path)
+    executed = load_instruction_functions(trace_path, starts, ends, names)
+
+    ordered = STRATEGIES[strategy](executed)
+    log(f"==> Ordered {len(ordered):,} functions using '{strategy}'")
+    return ordered
+
+
 # --- CLI --------------------------------------------------------------------
 
 
@@ -217,21 +257,16 @@ def main(argv: list[str] | None = None) -> int:
     if not binary.is_file():
         raise SystemExit(f"error: binary not found: {binary}")
 
-    trace_path = args.trace or binary.with_name(binary.name + ".memtrace.csv")
-    layout_path = args.layout or binary.with_name(binary.name + ".layout.json")
+    trace_path = args.trace or default_trace_path(binary)
+    layout_path = args.layout or default_layout_path(binary)
 
-    layout_path = ensure_layout(binary, layout_path, args.force)
-    trace_path = ensure_trace(binary, trace_path, args.port, args.force)
-
-    starts, ends, names = load_layout(layout_path)
-    executed = load_instruction_functions(trace_path, starts, ends, names)
-
-    ordered = STRATEGIES[args.strategy](executed)
-    log(f"==> Ordered {len(ordered):,} functions using '{args.strategy}'")
+    ordered = compute_order(
+        binary, trace_path, layout_path, args.port, args.strategy, args.force
+    )
 
     text = "".join(name + "\n" for name in ordered)
     if args.output is None:
-        out_path = binary.with_name(binary.name + ".bolt-order.txt")
+        out_path = default_order_path(binary)
         out_path.write_text(text)
         log(f"==> Wrote function order to {out_path}")
     elif str(args.output) == "-":

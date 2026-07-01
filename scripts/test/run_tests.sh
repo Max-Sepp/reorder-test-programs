@@ -8,7 +8,7 @@
 # language or framework.
 #
 # Usage:
-#   scripts/run_tests.sh <server-address>
+#   scripts/test/run_tests.sh <server-address>
 #
 #   <server-address>  Base URL of a running server, e.g. http://localhost:8080
 #                     or just localhost:8080 (http:// is assumed). A trailing

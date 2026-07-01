@@ -3,7 +3,7 @@
 # Clean build + conformance test for one Rust server implementation.
 #
 # Builds a package from the rust/ Cargo workspace, starts the server on the
-# given port, and runs the generic interface test (scripts/run_tests.sh)
+# given port, and runs the generic interface test (scripts/test/run_tests.sh)
 # against it. The server is shut down with SIGTERM once testing completes.
 #
 # This is the Rust counterpart of run_sanitiser_test.sh, but it does not enable
@@ -12,7 +12,7 @@
 # check here.
 #
 # Usage:
-#   scripts/run_cargo_test.sh <package> <binary> <port>
+#   scripts/test/run_cargo_test.sh <package> <binary> <port>
 #
 #     <package>  Cargo package in the rust/ workspace (e.g. axum-server).
 #     <binary>   Name of the built executable (e.g. axum_server).
@@ -36,7 +36,7 @@ BINARY="$2"
 PORT="$3"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 RUST_DIR="$REPO_ROOT/rust"
 
 ADDR="http://localhost:$PORT"

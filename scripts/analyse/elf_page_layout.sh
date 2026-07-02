@@ -3,7 +3,7 @@
 # the runtime virtual-address range and the pages of memory it occupies when
 # the binary is run under valgrind with ASLR disabled.
 #
-# The memory-access traces produced by measure_initial_startup_and_request.sh
+# The memory-access traces produced by measure_valgrind_startup_and_request.sh
 # are just raw runtime addresses. This script is the "layout key" that maps
 # those addresses back to sections and functions: valgrind loads a PIE client
 # executable at a fixed base (0x04000000 on linux-amd64) when ASLR is off, so

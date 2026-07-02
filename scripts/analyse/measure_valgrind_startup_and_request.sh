@@ -28,7 +28,7 @@
 # Example:
 #   # Build the Axum server, then trace its startup + first request.
 #   ( cd rust && cargo build -p axum-server )
-#   PORT=8090 scripts/analyse/measure_initial_startup_and_request.sh rust/target/debug/axum_server > axum.memtrace.csv
+#   PORT=8090 scripts/analyse/measure_valgrind_startup_and_request.sh rust/target/debug/axum_server > axum.memtrace.csv
 #
 #   # axum.memtrace.csv now holds only the memory accesses, e.g.:
 #   #   type,address,size

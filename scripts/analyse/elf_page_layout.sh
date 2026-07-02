@@ -101,11 +101,7 @@ trap 'rm -rf "$WORK"' EXIT
 # section and, as a side effect, an "ndx<TAB>name" map for function attribution.
 readelf -SW "$ELF" \
     | sed -E 's/\[[[:space:]]*([0-9]+)\]/\1/' \
-    | awk -v bias="$BIAS" -v ps="$PAGE_SIZE" -v mapfile="$WORK/ndx2name" '
-        function jesc(s) { gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s }
-        $1 ~ /^[0-9]+$/ && $1 != 0 {
-            idx = $1; name = $2; type = $3;
-            addr = strtonum("0x" $4); size = strtonum("0x" $6);
+    | gawk -v bias="$BIAS" -v ps="$PAGE_SIZE" -v mapfile="$WORK/ndx2name" '
             flags = (NF >= 11) ? $8 : "";
             print idx "\t" name > mapfile;
             mapped = (index(flags, "A") > 0) ? "true" : "false";
@@ -143,7 +139,7 @@ cut -f4 "$WORK/funcs.tsv" | c++filt > "$WORK/demangled.txt" 2>/dev/null \
     || cut -f4 "$WORK/funcs.tsv" > "$WORK/demangled.txt"
 
 paste "$WORK/funcs.tsv" "$WORK/demangled.txt" \
-    | awk -F'\t' -v bias="$BIAS" -v ps="$PAGE_SIZE" -v mapfile="$WORK/ndx2name" '
+    | gawk -F'\t' -v bias="$BIAS" -v ps="$PAGE_SIZE" -v mapfile="$WORK/ndx2name" '
         function jesc(s) { gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s }
         BEGIN {
             while ((getline line < mapfile) > 0) {

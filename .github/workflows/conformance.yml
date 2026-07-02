@@ -18,11 +18,11 @@ jobs:
       matrix:
         include:
           - name: Crow (clang, ASan + UBSan)
-            script: scripts/test_crow.sh
+            script: scripts/test/test_crow.sh
           - name: cpp-httplib (clang, ASan + UBSan)
-            script: scripts/test_httplib.sh
+            script: scripts/test/test_httplib.sh
           - name: Drogon (clang, ASan + UBSan)
-            script: scripts/test_drogon.sh
+            script: scripts/test/test_drogon.sh
     steps:
       - uses: actions/checkout@v4
 
@@ -53,11 +53,11 @@ jobs:
       matrix:
         include:
           - name: Axum (cargo)
-            script: scripts/test_axum.sh
+            script: scripts/test/test_axum.sh
           - name: Actix Web (cargo)
-            script: scripts/test_actix.sh
+            script: scripts/test/test_actix.sh
           - name: Rocket (cargo)
-            script: scripts/test_rocket.sh
+            script: scripts/test/test_rocket.sh
     steps:
       - uses: actions/checkout@v4
 

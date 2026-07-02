@@ -4,13 +4,14 @@
 #
 # Performs a from-scratch build of cpp/<project> with AddressSanitizer and
 # UndefinedBehaviorSanitizer enabled (clang), starts the server on the given
-# port, and runs the generic interface test (scripts/run_tests.sh) against it.
+# port, and runs the generic interface test (scripts/test/run_tests.sh) against
+# it.
 # The build halts on the first sanitiser error, and the server is shut down
 # with SIGINT so it returns from its listen loop cleanly and LeakSanitizer's
 # end-of-run leak check fires.
 #
 # Usage:
-#   scripts/run_sanitiser_test.sh <project> <binary> <port>
+#   scripts/test/run_sanitiser_test.sh <project> <binary> <port>
 #
 #     <project>  Implementation directory under cpp/ (e.g. crow, cpp-httplib).
 #     <binary>   Name of the executable CMake builds (e.g. crow_server).
@@ -34,7 +35,7 @@ BINARY="$2"
 PORT="$3"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PROJECT_DIR="$REPO_ROOT/cpp/$PROJECT"
 BUILD_DIR="$PROJECT_DIR/build-asan"
 

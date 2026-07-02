@@ -39,7 +39,9 @@ import matplotlib
 # MPLBACKEND override win (e.g. MPLBACKEND=Agg for a headless --save run, where
 # plt.show() becomes a no-op).
 if "MPLBACKEND" not in os.environ:
-    matplotlib.use("QtAgg")
+    import importlib.util
+    if any(importlib.util.find_spec(m) for m in ("PyQt6", "PySide6", "PyQt5", "PySide2")):
+        matplotlib.use("QtAgg")
 
 import matplotlib.pyplot as plt  # noqa: E402  (after backend selection)
 import numpy as np  # noqa: E402

@@ -56,6 +56,22 @@ fi
 PORT="${PORT:-8080}"
 ADDR="http://localhost:$PORT"
 
+# The request whose startup + first-response footprint we trace. Defaults to
+# GET /log (the endpoint the reordering was derived from), but overridable so we
+# can trace a *different* request against the same binary -- e.g. the POST /log
+# cross-request footprint:
+#   METHOD=POST ENDPOINT=/log BODY='hello' scripts/analyse/measure_...sh <binary>
+METHOD="${METHOD:-GET}"
+ENDPOINT="${ENDPOINT:-/log}"
+BODY="${BODY:-}"
+
+# curl args for that request, reused by every readiness attempt. For non-GET
+# methods we send BODY as the request body.
+REQUEST_ARGS=(--silent --output /dev/null --max-time 1 -X "$METHOD")
+if [ "$METHOD" != "GET" ] && [ "$METHOD" != "HEAD" ]; then
+    REQUEST_ARGS+=(--data-binary "$BODY")
+fi
+
 # Raw valgrind output, including its own banner lines; cleaned up at the end.
 RAW="$(mktemp)"
 
@@ -87,7 +103,7 @@ trap cleanup EXIT
 
 # Under valgrind startup is slow, so allow a generous number of attempts. Each
 # curl is itself the request we are measuring the response to.
-echo "==> Waiting for server to come up and answer a request" >&2
+echo "==> Waiting for server to come up and answer a $METHOD $ENDPOINT request" >&2
 start_ns="$(date +%s%N)"
 ready=0
 for _ in $(seq 1 600); do
@@ -96,7 +112,7 @@ for _ in $(seq 1 600); do
         cat "$RAW" >&2
         exit 1
     fi
-    if curl --silent --output /dev/null --max-time 1 "$ADDR/log"; then
+    if curl "${REQUEST_ARGS[@]}" "$ADDR$ENDPOINT"; then
         ready=1
         break
     fi

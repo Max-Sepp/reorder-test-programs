@@ -71,15 +71,36 @@ def ensure_layout(binary: Path, layout_path: Path, force: bool) -> Path:
     return layout_path
 
 
-def ensure_trace(binary: Path, trace_path: Path, port: int, force: bool) -> Path:
+def ensure_trace(
+    binary: Path,
+    trace_path: Path,
+    port: int,
+    force: bool,
+    method: str = "GET",
+    endpoint: str = "/log",
+    body: str = "",
+) -> Path:
     """Return the memory-trace CSV, generating it via
     measure_initial_startup_and_request.sh if missing (or --force). That script
-    emits the CSV to stdout, which we capture into trace_path."""
+    emits the CSV to stdout, which we capture into trace_path.
+
+    method/endpoint/body select which request the trace's first response covers
+    (default GET /log). Override them to trace a different request against the
+    same binary -- e.g. method="POST" for the cross-request footprint."""
     if trace_path.exists() and not force:
         log(f"==> Reusing cached trace {trace_path}")
         return trace_path
-    log(f"==> Tracing startup of {binary} on port {port} -> {trace_path}")
-    env = {**os.environ, "PORT": str(port)}
+    log(
+        f"==> Tracing startup + {method} {endpoint} of {binary} "
+        f"on port {port} -> {trace_path}"
+    )
+    env = {
+        **os.environ,
+        "PORT": str(port),
+        "METHOD": method,
+        "ENDPOINT": endpoint,
+        "BODY": body,
+    }
     with open(trace_path, "wb") as out:
         subprocess.run(
             [str(TRACE_SCRIPT), str(binary)],

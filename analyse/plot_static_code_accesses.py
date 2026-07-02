@@ -53,17 +53,32 @@ def log(msg: str) -> None:
 
 
 def code_fetches(
-    binary: Path, port: int, force: bool
+    binary: Path,
+    port: int,
+    force: bool,
+    method: str = "GET",
+    endpoint: str = "/log",
+    body: str = "",
+    trace_suffix: str = "",
 ) -> tuple[np.ndarray, np.ndarray]:
     """Collect the binary's startup trace + layout, then return (x, y) for every
     instruction fetch landing in the binary's own statically-linked code:
     x = the fetch's index in the instruction stream (time), y = its virtual
-    address as an offset from the load base."""
-    trace_path = order.default_trace_path(binary)
+    address as an offset from the load base.
+
+    method/endpoint/body pick which request the trace covers (default GET /log);
+    trace_suffix is inserted into the trace filename (e.g. ".post") so a
+    cross-request trace lives alongside the default one instead of clobbering
+    it."""
+    # e.g. actix_server + ".post" -> actix_server.post.memtrace.csv
+    trace_path = binary.with_name(binary.name + trace_suffix + ".memtrace.csv")
     layout_path = order.default_layout_path(binary)
 
     order.ensure_layout(binary, layout_path, force)
-    order.ensure_trace(binary, trace_path, port, force)
+    order.ensure_trace(
+        binary, trace_path, port, force,
+        method=method, endpoint=endpoint, body=body,
+    )
 
     starts, ends, _names = order.load_layout(layout_path)
     with open(layout_path) as f:
@@ -105,6 +120,29 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         help="Also write the figure to this PNG (useful for headless runs).",
     )
+    p.add_argument(
+        "--method",
+        default="GET",
+        help="HTTP method of the traced request (default: GET). Use POST to "
+        "trace a cross-request footprint against a binary ordered on GET.",
+    )
+    p.add_argument(
+        "--endpoint",
+        default="/log",
+        help="Endpoint of the traced request (default: /log).",
+    )
+    p.add_argument(
+        "--body",
+        default="",
+        help="Request body for non-GET methods (default: empty).",
+    )
+    p.add_argument(
+        "--trace-suffix",
+        default="",
+        help="Suffix inserted into the trace filename so a cross-request trace "
+        "does not clobber the default one, e.g. '.post' -> "
+        "<binary>.post.memtrace.csv.",
+    )
     return p.parse_args(argv)
 
 
@@ -121,7 +159,11 @@ def main(argv: list[str] | None = None) -> int:
 
     fig, axes = plt.subplots(2, 1, sharex=True, figsize=(14, 9))
     for ax, (binary, colour) in zip(axes, panels):
-        x, y = code_fetches(binary, args.port, force=False)
+        x, y = code_fetches(
+            binary, args.port, force=False,
+            method=args.method, endpoint=args.endpoint, body=args.body,
+            trace_suffix=args.trace_suffix,
+        )
         # ",": 1-pixel marker, no line -> a single Line2D, fast enough to draw
         # every one of ~2M points with no downsampling.
         ax.plot(x, y, ",", color=colour, alpha=0.3)
@@ -130,7 +172,10 @@ def main(argv: list[str] | None = None) -> int:
         ax.margins(x=0)
 
     axes[-1].set_xlabel("instruction fetch index (time)")
-    fig.suptitle("Static-code instruction fetches over startup: before vs after")
+    fig.suptitle(
+        f"Static-code instruction fetches over startup + {args.method} "
+        f"{args.endpoint}: before vs after"
+    )
     fig.tight_layout()
 
     if args.save:

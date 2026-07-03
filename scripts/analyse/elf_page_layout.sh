@@ -102,6 +102,10 @@ trap 'rm -rf "$WORK"' EXIT
 readelf -SW "$ELF" \
     | sed -E 's/\[[[:space:]]*([0-9]+)\]/\1/' \
     | gawk -v bias="$BIAS" -v ps="$PAGE_SIZE" -v mapfile="$WORK/ndx2name" '
+        function jesc(s) { gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s }
+        $1 ~ /^[0-9]+$/ && $1 != 0 {
+            idx = $1; name = $2; type = $3;
+            addr = strtonum("0x" $4); size = strtonum("0x" $6);
             flags = (NF >= 11) ? $8 : "";
             print idx "\t" name > mapfile;
             mapped = (index(flags, "A") > 0) ? "true" : "false";

@@ -1,0 +1,9 @@
+# scala-cli / Scala Native build output and IDE metadata.
+.scala-build/
+.bsp/
+.bloop/
+.metals/
+
+# Packaged native binaries (built into the working tree by the test scripts;
+# experiment binaries live under the git-ignored /tmp instead).
+*_server

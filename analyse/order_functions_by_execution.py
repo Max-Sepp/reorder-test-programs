@@ -3,7 +3,7 @@
 
 This ties together the two analysis shell tools in ``scripts/analyse``:
 
-  * ``measure_initial_startup_and_request.sh`` runs a server binary under
+  * ``measure_valgrind_startup_and_request.sh`` runs a server binary under
     valgrind's lackey tool and emits a CSV memory trace ("type,address,size";
     ``type == I`` rows are instruction fetches, in execution order).
   * ``elf_page_layout.sh`` emits JSON mapping every function to its *runtime*
@@ -46,7 +46,7 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = REPO_ROOT / "scripts" / "analyse"
 LAYOUT_SCRIPT = SCRIPTS_DIR / "elf_page_layout.sh"
-TRACE_SCRIPT = SCRIPTS_DIR / "measure_initial_startup_and_request.sh"
+TRACE_SCRIPT = SCRIPTS_DIR / "measure_valgrind_startup_and_request.sh"
 
 
 def log(msg: str) -> None:
@@ -81,7 +81,7 @@ def ensure_trace(
     body: str = "",
 ) -> Path:
     """Return the memory-trace CSV, generating it via
-    measure_initial_startup_and_request.sh if missing (or --force). That script
+    measure_valgrind_startup_and_request.sh if missing (or --force). That script
     emits the CSV to stdout, which we capture into trace_path.
 
     method/endpoint/body select which request the trace's first response covers

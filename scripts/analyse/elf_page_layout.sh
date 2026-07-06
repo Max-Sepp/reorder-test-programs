@@ -3,7 +3,7 @@
 # the runtime virtual-address range and the pages of memory it occupies when
 # the binary is run under valgrind with ASLR disabled.
 #
-# The memory-access traces produced by measure_initial_startup_and_request.sh
+# The memory-access traces produced by measure_valgrind_startup_and_request.sh
 # are just raw runtime addresses. This script is the "layout key" that maps
 # those addresses back to sections and functions: valgrind loads a PIE client
 # executable at a fixed base (0x04000000 on linux-amd64) when ASLR is off, so
@@ -102,6 +102,10 @@ trap 'rm -rf "$WORK"' EXIT
 readelf -SW "$ELF" \
     | sed -E 's/\[[[:space:]]*([0-9]+)\]/\1/' \
     | gawk -v bias="$BIAS" -v ps="$PAGE_SIZE" -v mapfile="$WORK/ndx2name" '
+        function jesc(s) { gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s }
+        $1 ~ /^[0-9]+$/ && $1 != 0 {
+            idx = $1; name = $2; type = $3;
+            addr = strtonum("0x" $4); size = strtonum("0x" $6);
             flags = (NF >= 11) ? $8 : "";
             print idx "\t" name > mapfile;
             mapped = (index(flags, "A") > 0) ? "true" : "false";

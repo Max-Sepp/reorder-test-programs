@@ -76,3 +76,37 @@ jobs:
 
       - name: Build and run conformance tests
         run: ${{ matrix.script }}
+
+  conformance-scala:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: http4s (Scala Native)
+            script: scripts/test/test_http4s.sh
+    steps:
+      - uses: actions/checkout@v4
+
+      # Scala Native links via clang and needs the GC/unwind dev libraries:
+      # boehm (the server's default GC) -> libgc-dev; immix/commix -> libunwind-dev.
+      - name: Install native toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libgc-dev libunwind-dev curl
+
+      - name: Set up scala-cli (and JVM)
+        uses: VirtusLab/scala-cli-setup@v1
+
+      - name: Cache Scala/Coursier artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/coursier
+            ~/.cache/scalacli
+          key: scala-${{ runner.os }}-${{ hashFiles('scala/**/*.scala') }}
+          restore-keys: scala-${{ runner.os }}-
+
+      - name: Build and run conformance tests
+        run: ${{ matrix.script }}
